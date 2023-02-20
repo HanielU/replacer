@@ -35,6 +35,29 @@ fn replace_string_in_file(file_path: &str, old_string: &str, new_string: &str) {
     std::io::Write::write_all(&mut file, new_content.as_bytes()).unwrap();
 }
 
+fn replace_string_in_dir(dir: &str, old_string: &str, new_string: &str) {
+    let path = Path::new(dir);
+    if path.is_dir() {
+        for entry in fs::read_dir(path).unwrap() {
+            let entry = entry.unwrap();
+            let entry_path = entry.path();
+            if entry_path.is_dir() {
+                replace_string_in_dir(
+                    entry_path.to_str().unwrap(),
+                    old_string,
+                    new_string,
+                );
+            } else {
+                replace_string_in_file(
+                    entry_path.to_str().unwrap(),
+                    old_string,
+                    new_string,
+                );
+            }
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -42,33 +65,22 @@ fn main() {
         return;
     }
 
-    let mut dir_flag = false;
-    let mut file_flag = false;
-    let mut dir = "";
-    let mut old_ext = "";
-    let mut new_ext = "";
-    let mut file_path = "";
-    let mut old_string = "";
-    let mut new_string = "";
-
     for i in 1..args.len() {
         if args[i] == "--dir" {
-            dir_flag = true;
-            dir = &args[i + 1];
-            old_ext = &args[i + 2];
-            new_ext = &args[i + 3];
+            let dir = &args[i + 1];
+            let old_ext = &args[i + 2];
+            let new_ext = &args[i + 3];
+            replace_extension(dir, old_ext, new_ext);
         } else if args[i] == "--file" {
-            file_flag = true;
-            file_path = &args[i + 1];
-            old_string = &args[i + 2];
-            new_string = &args[i + 3];
+            let file_path = &args[i + 1];
+            let old_string = &args[i + 2];
+            let new_string = &args[i + 3];
+            replace_string_in_file(file_path, old_string, new_string);
+        } else if args[i] == "--dirfile" {
+            let dir = &args[i + 1];
+            let old_string = &args[i + 2];
+            let new_string = &args[i + 3];
+            replace_string_in_dir(dir, old_string, new_string);
         }
-    }
-
-    if dir_flag {
-        replace_extension(dir, old_ext, new_ext);
-    }
-    if file_flag {
-        replace_string_in_file(file_path, old_string, new_string);
     }
 }
